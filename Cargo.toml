@@ -1,0 +1,12 @@
+[package]
+name = "udsn"
+version = "0.1.1"
+edition = "2024"
+authors = ["tony-o"]
+description = "a [more] robust connection string URI parser/generator"
+readme = "README.md"
+repository = "https://github.com/tony-o/rust-udsn"
+license = "Artistic-2.0"
+keywords = ["dsn", "uri", "connectionstr", "connection-string", "connection"]
+
+[dependencies]
