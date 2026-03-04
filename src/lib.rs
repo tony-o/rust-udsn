@@ -47,28 +47,28 @@ impl DSN {
         }
     }
 
-    pub fn protocol(mut self, proto: String) -> Self {
-        self.protocol = proto;
+    pub fn protocol(mut self, proto: &str) -> Self {
+        self.protocol = proto.to_string();
         self
     }
 
-    pub fn username(mut self, user: Option<String>) -> Self {
-        self.username = user;
+    pub fn username(mut self, user: Option<&str>) -> Self {
+        self.username = user.map(|a| a.to_string());
         self
     }
 
-    pub fn password(mut self, pass: Option<String>) -> Self {
-        self.password = pass;
+    pub fn password(mut self, pass: Option<&str>) -> Self {
+        self.password = pass.map(|a| a.to_string());
         self
     }
 
-    pub fn path(mut self, path: String) -> Self {
-        self.resource = Some(Resource::Path(path));
+    pub fn path(mut self, path: &str) -> Self {
+        self.resource = Some(Resource::Path(path.to_string()));
         self
     }
 
-    pub fn host(mut self, host: String) -> Self {
-        self.resource = Some(Resource::URI(host));
+    pub fn host(mut self, host: &str) -> Self {
+        self.resource = Some(Resource::URI(host.to_string()));
         self
     }
 
@@ -82,21 +82,48 @@ impl DSN {
         self
     }
 
-    pub fn database(mut self, db: Option<String>) -> Self {
-        self.database = db;
+    pub fn database(mut self, db: Option<&str>) -> Self {
+        self.database = db.map(|a| a.to_string());
         self
     }
 
-    pub fn params(mut self, params: Option<Vec<(String, Option<String>)>>) -> Self {
-        self.params = params;
-        self
-    }
-
-    pub fn add_params(mut self, params: Vec<(String, Option<String>)>) -> Self {
-        if let Some(ps) = &mut self.params {
-            params.iter().for_each(|p| ps.push(p.clone()));
+    pub fn params(mut self, params: Option<Vec<(&str, Option<&str>)>>) -> Self {
+        self.params = if let Some(ps) = params {
+            Some(
+                ps.iter()
+                    .map(|(k, v)| {
+                        (
+                            k.to_string(),
+                            if let Some(vv) = v {
+                                Some(vv.to_string())
+                            } else {
+                                None
+                            },
+                        )
+                    })
+                    .collect(),
+            )
         } else {
-            self.params = Some(params);
+            None
+        };
+        self
+    }
+
+    pub fn add_params(mut self, params: Vec<(&str, Option<&str>)>) -> Self {
+        if self.params.is_none() {
+            self.params = Some(Vec::new());
+        }
+        if let Some(ps) = &mut self.params {
+            params.iter().for_each(|(k, v)| {
+                ps.push((
+                    k.to_string(),
+                    if let Some(a) = v {
+                        Some(a.to_string())
+                    } else {
+                        None
+                    },
+                ))
+            });
         }
         self
     }
@@ -352,32 +379,29 @@ mod tests {
     #[test]
     fn builder() {
         let mut dsn = DSN::new()
-            .protocol("postgres".to_string())
-            .username(Some("ab c".to_string()))
-            .password(Some("12 3".to_string()))
+            .protocol("postgres")
+            .username(Some("ab c"))
+            .password(Some("12 3"))
             .resource(Some(Resource::URI("localhost".to_string())))
             .port(Some(1234))
-            .database(Some("db".to_string()));
+            .database(Some("db"));
         assert_eq!(
             dsn.to_string(),
             "postgres://ab%20c:12%203@localhost:1234/db"
         );
 
-        dsn = dsn.params(Some(vec![
-            ("hello".to_string(), Some("world!".to_string())),
-            ("test".to_string(), None),
-        ]));
+        dsn = dsn.params(Some(vec![("hello", Some("world!")), ("test", None)]));
         assert_eq!(
             dsn.to_string(),
             "postgres://ab%20c:12%203@localhost:1234/db?hello=world%21&test"
         );
-        dsn = dsn.params(Some(vec![("test".to_string(), None)]));
+        dsn = dsn.params(Some(vec![("test", None)]));
         assert_eq!(
             dsn.to_string(),
             "postgres://ab%20c:12%203@localhost:1234/db?test"
         );
 
-        dsn = dsn.add_params(vec![("hello".to_string(), Some("world!".to_string()))]);
+        dsn = dsn.add_params(vec![("hello", Some("world!"))]);
         assert_eq!(
             dsn.to_string(),
             "postgres://ab%20c:12%203@localhost:1234/db?test&hello=world%21"
