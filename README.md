@@ -5,9 +5,9 @@ A quick little DSN parser that can give you a nice looking URI connection string
 ```rust
 use udsn::{DSN, Resource};
 
-let dsn = DSN::new(
-    "postgres".to_string(),     // protocol
-    None,                       // username
+let dsn = DSN::new()
+    .protocol("postgres".to_string()),     // protocol
+    .username(Some("username")),                       // username
     None,                       // password
     Resource::URI("localhost"), // uri or localpath
     Some(5432),                 // port

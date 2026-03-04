@@ -15,7 +15,7 @@ pub struct DSN {
 }
 
 impl DSN {
-    pub fn new(
+    pub fn new_with(
         protocol: String,
         username: Option<String>,
         password: Option<String>,
@@ -33,6 +33,72 @@ impl DSN {
             database,
             params,
         }
+    }
+
+    pub fn new() -> Self {
+        Self {
+            protocol: "".to_string(),
+            username: None,
+            password: None,
+            resource: None,
+            port: None,
+            database: None,
+            params: None,
+        }
+    }
+
+    pub fn protocol(mut self, proto: String) -> Self {
+        self.protocol = proto;
+        self
+    }
+
+    pub fn username(mut self, user: Option<String>) -> Self {
+        self.username = user;
+        self
+    }
+
+    pub fn password(mut self, pass: Option<String>) -> Self {
+        self.password = pass;
+        self
+    }
+
+    pub fn path(mut self, path: String) -> Self {
+        self.resource = Some(Resource::Path(path));
+        self
+    }
+
+    pub fn host(mut self, host: String) -> Self {
+        self.resource = Some(Resource::URI(host));
+        self
+    }
+
+    pub fn resource(mut self, rsrc: Option<Resource>) -> Self {
+        self.resource = rsrc;
+        self
+    }
+
+    pub fn port(mut self, port: Option<u16>) -> Self {
+        self.port = port;
+        self
+    }
+
+    pub fn database(mut self, db: Option<String>) -> Self {
+        self.database = db;
+        self
+    }
+
+    pub fn params(mut self, params: Option<Vec<(String, Option<String>)>>) -> Self {
+        self.params = params;
+        self
+    }
+
+    pub fn add_params(mut self, params: Vec<(String, Option<String>)>) -> Self {
+        if let Some(ps) = &mut self.params {
+            params.iter().for_each(|p| ps.push(p.clone()));
+        } else {
+            self.params = Some(params);
+        }
+        self
     }
 
     pub fn parse(dsn: String) -> Option<DSN> {
@@ -282,6 +348,47 @@ fn hex_to_int(b: u8) -> Option<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn builder() {
+        let mut dsn = DSN::new()
+            .protocol("postgres".to_string())
+            .username(Some("ab c".to_string()))
+            .password(Some("12 3".to_string()))
+            .resource(Some(Resource::URI("localhost".to_string())))
+            .port(Some(1234))
+            .database(Some("db".to_string()));
+        assert_eq!(
+            dsn.to_string(),
+            "postgres://ab%20c:12%203@localhost:1234/db"
+        );
+
+        dsn = dsn.params(Some(vec![
+            ("hello".to_string(), Some("world!".to_string())),
+            ("test".to_string(), None),
+        ]));
+        assert_eq!(
+            dsn.to_string(),
+            "postgres://ab%20c:12%203@localhost:1234/db?hello=world%21&test"
+        );
+        dsn = dsn.params(Some(vec![("test".to_string(), None)]));
+        assert_eq!(
+            dsn.to_string(),
+            "postgres://ab%20c:12%203@localhost:1234/db?test"
+        );
+
+        dsn = dsn.add_params(vec![("hello".to_string(), Some("world!".to_string()))]);
+        assert_eq!(
+            dsn.to_string(),
+            "postgres://ab%20c:12%203@localhost:1234/db?test&hello=world%21"
+        );
+
+        dsn = dsn.params(None);
+        assert_eq!(
+            dsn.to_string(),
+            "postgres://ab%20c:12%203@localhost:1234/db"
+        );
+    }
 
     macro_rules! mk_test_pos {
         ($($name:ident: $test_str:expr, $protocol:expr, $user:expr, $pass:expr, $rsrc:expr, $port:expr, $db:expr, $params:expr,)*) => {
