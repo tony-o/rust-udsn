@@ -1,6 +1,6 @@
 [package]
 name = "udsn"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 authors = ["tony-o"]
 description = "a [more] robust connection string URI parser/generator"
@@ -9,4 +9,13 @@ repository = "https://github.com/tony-o/rust-udsn"
 license = "Artistic-2.0"
 keywords = ["dsn", "connection", "database", "db", "url"]
 
+[features]
+json = ["dep:serde"]
+
 [dependencies]
+serde = { version = "1.0.0", optional = true }
+
+[dev-dependencies]
+serde = { version = "1.0.0", features = ["derive"] }
+serde_json = "1.0.0"
+udsn = { path = ".", features = ["json"] }

@@ -14,6 +14,9 @@ pub struct DSN {
     pub params: Option<Vec<(String, Option<String>)>>,
 }
 
+#[cfg(feature = "json")]
+pub mod json_ops;
+
 impl DSN {
     pub fn new_with(
         protocol: String,
@@ -375,6 +378,26 @@ fn hex_to_int(b: u8) -> Option<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[derive(serde::Deserialize, serde::Serialize)]
+    struct A {
+        dsn: DSN,
+    }
+
+    #[test]
+    fn deserializable() {
+        let ai = serde_json::from_value::<A>(serde_json::json!({"dsn": "git://some-repo"}));
+        assert!(ai.is_ok());
+        assert_eq!(ai.unwrap().dsn.to_string(), "git://some-repo");
+    }
+
+    #[test]
+    fn serializable() {
+        let ai = serde_json::to_value(&A {
+            dsn: DSN::parse("git://some-repo".to_string()).expect("this is a valid DSN"),
+        });
+        assert!(ai.is_ok());
+        assert_eq!(ai.unwrap(), serde_json::json!({"dsn": "git://some-repo"}));
+    }
 
     #[test]
     fn builder() {
