@@ -4,6 +4,7 @@ pub enum Resource {
     Path(String),
 }
 
+#[derive(Debug)]
 pub struct DSN {
     pub protocol: String,
     pub username: Option<String>,
@@ -337,6 +338,7 @@ pub fn percent_encode(s: &String) -> String {
     }
     encoded
 }
+
 pub fn percent_decode(s: &String) -> String {
     let bytes = s.as_bytes();
     let mut decoded = Vec::with_capacity(bytes.len());
